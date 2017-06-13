@@ -1,19 +1,25 @@
 # Async DNS Brute
 
-Brute force DNS domain names asynchronously
+A Python 3.5+ script that uses asyncio to brute force domain names asynchronously.
+
+## Speed
+
+*It's fast.* Benchmarks on small VPS hosts put around 100k DNS resoultions at 1.5-2mins. An amazon M3 box was used to make 1 mil requests in just over 3 minutes. Nothing has been optimized and I haven't even started looking into threading/multiprocessing...
 
 ### Warning
 
 This code is highly experimental, use at your own risk. There is lots of stuff that still hasn't been completed. But despite the very rough edges it works.
 
-The biggest issues at the moment is that there is absolutely no memory managemen, if you throw wordlist with 100m words at it on a box with 1gb of memory it will crash. Also, there is currently no handler for DNS timeouts, we just ignore them and keep moving... that will be fixed later.
+The biggest issues at the moment is that there is absolutely no memory management, if you throw wordlist with 100m words at it on a box with 1gb of memory it will crash. Also, there is currently no handler for DNS timeouts, we just ignore them and keep moving... that will be fixed later.
 
 # Installation
 
 If you don't use `pipsi`, you're missing out.
 Here are [installation instructions](https://github.com/mitsuhiko/pipsi#readme).
 
-## Kali
+## Debian/Kali/Ubuntu
+
+The following should get you up and running.
 
     $ sudo apt-get install python3-pip
     $ sudo pip3 install virtualenv
