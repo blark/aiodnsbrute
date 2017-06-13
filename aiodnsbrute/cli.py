@@ -53,8 +53,9 @@ class aioDNSBrute(object):
                 self.logger('{} generated an unexpected exception: {}'.format(name, future.exception()), 'err')
             self.errors.append({'hostname': name, 'error': err_text})
         else:
-            self.fqdn.append(('name', future.result()))
-            self.logger("{}\t{}".format(name, future.result()), 'pos')
+            ip = ', '.join([ip.host for ip in future.result()])
+            self.fqdn.append((name, ip))
+            self.logger("{:<30}\t{}".format(name, ip), 'pos')
         if self.verbosity >= 1:
             self.pbar.update()
 
@@ -83,6 +84,7 @@ class aioDNSBrute(object):
             self.loop.close()
             self.pbar.close()
 
+
 @click.command()
 @click.option('--wordlist', '-w', help='Wordlist to use for brute force.',
               default='./wordlists/bitquark_20160227_subdomains_popular_1000')
@@ -92,8 +94,13 @@ class aioDNSBrute(object):
 @click.argument('domain', required=True)
 def main(wordlist, domain, max_tasks, verbosity):
     """Brute force DNS domain names asynchronously"""
+    import csv
     bf = aioDNSBrute(verbosity=verbosity, max_tasks=max_tasks)
     bf.run(wordlist=wordlist, domain=domain)
+    with open("{}.csv".format(domain.replace(".", "_")), "w") as csv_file:
+        writer = csv.writer(csv_file)
+        writer.writerow(['Hostname', 'IPs'])
+        writer.writerows(bf.fqdn)
 
 if __name__ == '__main__':
     main()
