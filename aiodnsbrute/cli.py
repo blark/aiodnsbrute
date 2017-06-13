@@ -1,5 +1,6 @@
 import asyncio
 import functools
+import os
 import uvloop
 import aiodns
 import click
@@ -83,11 +84,12 @@ class aioDNSBrute(object):
         finally:
             self.loop.close()
             self.pbar.close()
+            self.logger("Completed, {} subdomains found.".format(len(self.fqdn)))
 
 
 @click.command()
 @click.option('--wordlist', '-w', help='Wordlist to use for brute force.',
-              default='./wordlists/bitquark_20160227_subdomains_popular_1000')
+              default='{}/wordlists/bitquark_20160227_subdomains_popular_1000'.format(os.path.dirname(os.path.realpath(__file__))))
 @click.option('--max-tasks', '-t', default=512,
               help='Maximum number of tasks to run asynchronosly.')
 @click.option('--verbosity', '-v', count=True, default=1, help="Turn on/increase output.")
@@ -97,6 +99,7 @@ def main(wordlist, domain, max_tasks, verbosity):
     import csv
     bf = aioDNSBrute(verbosity=verbosity, max_tasks=max_tasks)
     bf.run(wordlist=wordlist, domain=domain)
+    # TODO: Add CSV output options to command line
     with open("{}.csv".format(domain.replace(".", "_")), "w") as csv_file:
         writer = csv.writer(csv_file)
         writer.writerow(['Hostname', 'IPs'])

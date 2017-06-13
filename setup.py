@@ -16,6 +16,7 @@ setup(
     long_description=__doc__,
     packages=find_packages(exclude=['tests']),
     include_package_data=True,
+    package_data={'aiodnsbrute': ['wordlists/*']},
     zip_safe=False,
     platforms='any',
     python_requires='>=3.5',
