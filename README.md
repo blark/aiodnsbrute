@@ -40,3 +40,5 @@ Get help with:
 Run a brute force with some custom options:
 
     $ aiodnsbrute -w wordlist.txt -vv -t 1024 domain.com
+
+*note* you might want to do a `ulimit -n` to see how many open files are allowed. You can also increase that number using the same command, i.e. `ulimit -n <2048>`
