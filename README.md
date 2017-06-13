@@ -2,6 +2,8 @@
 
 A Python 3.5+ script that uses asyncio to brute force domain names asynchronously.
 
+![aiodnsbrute screenshot](screenshot.png)
+
 ## Speed
 
 *It's fast.* Benchmarks on small VPS hosts put around 100k DNS resoultions at 1.5-2mins. An amazon M3 box was used to make 1 mil requests in just over 3 minutes. Nothing has been optimized and I haven't even started looking into threading/multiprocessing...
