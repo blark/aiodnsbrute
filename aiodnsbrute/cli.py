@@ -5,6 +5,8 @@ import uvloop
 import aiodns
 import click
 from tqdm import tqdm
+import ptpdb
+
 
 class aioDNSBrute(object):
     """Description goes here eventually..."""
@@ -17,8 +19,9 @@ class aioDNSBrute(object):
         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         self.loop = asyncio.get_event_loop()
         self.resolver = aiodns.DNSResolver(loop=self.loop)
-        self.sem = asyncio.Semaphore(max_tasks)
+        self.sem = asyncio.BoundedSemaphore(max_tasks)
         self.pbar = None
+        self.c = 0
 
     def logger(self, msg, msg_type='info', level=1):
         """A quick and dirty msfconsole style stdout logger."""
@@ -34,16 +37,17 @@ class aioDNSBrute(object):
 
     async def lookup(self, name):
         """Performs a DNS request using aiodns, returns an asyncio future."""
-        with (await self.sem):
-            response = await self.resolver.query(name, 'A')
-            return response
+        response = await self.resolver.query(name, 'A')
+        return response
 
     def got_result(self, name, future):
         """Handles the result passed by the lookup function."""
-        # Deal with exceptions
         if future.exception() is not None:
-            err_num = future.exception().args[0]
-            err_text = future.exception().args[1]
+            try:
+                err_num = future.exception().args[0]
+                err_text = future.exception().args[1]
+            except IndexError:
+                logger("Couldn't parse exception: {}".format(future.exception()), 'err')
             if (err_num == 4): # This is domain name not found, ignore it.
                 pass
             elif (err_num == 12): # Timeout from DNS server
@@ -59,24 +63,29 @@ class aioDNSBrute(object):
             self.logger("{:<30}\t{}".format(name, ip), 'pos')
         if self.verbosity >= 1:
             self.pbar.update()
+        self.sem.release()
+
+    async def tasker(self, subdomains, domain):
+        """ describe this """
+        for n in subdomains:
+            await self.sem.acquire()
+            host = '{}.{}'.format(n, domain)
+            task = asyncio.ensure_future(self.lookup(host))
+            task.add_done_callback(functools.partial(self.got_result, host))
+            self.tasks.append(task)
+        await asyncio.gather(*self.tasks, return_exceptions=True)
 
     def run(self, wordlist, domain):
         # Read the wordlist file
         self.logger("Opening wordlist: {}".format(wordlist), 'dbg', 2)
         with open(wordlist) as f:
             subdomains = f.read().splitlines()
-        # Add each subdomain in the wordlist to the task list
-        self.logger("Adding {} subdomains to task list.".format(len(subdomains)), 'dbg', 2)
-        for n in subdomains:
-            host = '{}.{}'.format(n, domain)
-            task = asyncio.ensure_future(self.lookup(host))
-            task.add_done_callback(functools.partial(self.got_result, host))
-            self.tasks.append(task)
+        # Initialize the progress bar
         if self.verbosity >= 1:
             self.pbar = tqdm(total=len(subdomains), unit="rec", maxinterval=0.1, mininterval=0)
         self.logger("Starting {} DNS lookups for {}...".format(len(subdomains), domain))
         try:
-            self.loop.run_until_complete(asyncio.wait(self.tasks))
+            self.loop.run_until_complete(self.tasker(subdomains, domain))
         except KeyboardInterrupt:
             self.logger("Caught keyboard interrupt, cleaning up...")
             asyncio.gather(*asyncio.Task.all_tasks()).cancel()
