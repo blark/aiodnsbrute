@@ -5,7 +5,6 @@ import uvloop
 import aiodns
 import click
 from tqdm import tqdm
-import ptpdb
 
 
 class aioDNSBrute(object):
