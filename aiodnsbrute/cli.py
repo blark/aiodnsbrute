@@ -41,12 +41,13 @@ class aioDNSBrute(object):
 
     def got_result(self, name, future):
         """Handles the result passed by the lookup function."""
+        self.sem.release()
         if future.exception() is not None:
             try:
                 err_num = future.exception().args[0]
                 err_text = future.exception().args[1]
             except IndexError:
-                logger("Couldn't parse exception: {}".format(future.exception()), 'err')
+                self.logger("Couldn't parse exception: {}".format(future.exception()), 'err')
             if (err_num == 4): # This is domain name not found, ignore it.
                 pass
             elif (err_num == 12): # Timeout from DNS server
@@ -55,14 +56,14 @@ class aioDNSBrute(object):
                 pass
             else:
                 self.logger('{} generated an unexpected exception: {}'.format(name, future.exception()), 'err')
-            self.errors.append({'hostname': name, 'error': err_text})
+            #this takes too much memory on a small vps?
+            #self.errors.append({'hostname': name, 'error': err_text})
         else:
             ip = ', '.join([ip.host for ip in future.result()])
             self.fqdn.append((name, ip))
             self.logger("{:<30}\t{}".format(name, ip), 'pos')
         if self.verbosity >= 1:
             self.pbar.update()
-        self.sem.release()
 
     async def tasker(self, subdomains, domain):
         """ describe this """
