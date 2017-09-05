@@ -6,13 +6,11 @@ A Python 3.5+ script that uses asyncio to brute force domain names asynchronousl
 
 ## Speed
 
-*It's fast.* Benchmarks on small VPS hosts put around 100k DNS resoultions at 1.5-2mins. An amazon M3 box was used to make 1 mil requests in just over 3 minutes. Nothing has been optimized and I haven't even started looking into threading/multiprocessing...
+*It's fast.* Benchmarks on small VPS hosts put around 100k DNS resoultions at 1.5-2mins. An amazon M3 box was used to make 1 mil requests in just over 3 minutes. Your mileage may vary. It's probably best to avoid using Google's respolvers if you're purely interested in speed.
 
-### Warning
+## Todo
 
-This code is highly experimental, use at your own risk. There is lots of stuff that still hasn't been completed. But despite the very rough edges it works.
-
-The biggest issues at the moment is that there is absolutely no memory management, if you throw wordlist with 100m words at it on a box with 1gb of memory it will crash. Also, there is currently no handler for DNS timeouts, we just ignore them and keep moving... that will be fixed later.
+Right now the script just uses the system's DNS resolvers. I'll be adding a feature to read in a list of resolvers from a text file.
 
 # Installation
 
@@ -42,5 +40,15 @@ Get help with:
 Run a brute force with some custom options:
 
     $ aiodnsbrute -w wordlist.txt -vv -t 1024 domain.com
+
+    Usage: aiodnsbrute [OPTIONS] DOMAIN
+
+      Brute force DNS domain names asynchronously
+
+    Options:
+      -w, --wordlist TEXT      Wordlist to use for brute force.
+      -t, --max-tasks INTEGER  Maximum number of tasks to run asynchronosly.
+      -v, --verbosity          Turn on/increase output.
+      --help                   Show this message and exit.
 
 *note* you might want to do a `ulimit -n` to see how many open files are allowed. You can also increase that number using the same command, i.e. `ulimit -n <2048>`
