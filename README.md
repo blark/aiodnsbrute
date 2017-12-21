@@ -25,7 +25,8 @@ The following should get you up and running.
     $ sudo pip3 install virtualenv
     $ curl https://raw.githubusercontent.com/mitsuhiko/pipsi/master/get-pipsi.py | python3
 
-...add pipsi path to your .bashrc, source bashrc file
+NOTE: pipsi installs each package into `~/.local/venvs/PKGNAME` and then symlinks all new scripts into `~/.local/bin`
+so add `~/.local/bin` to your .bashrc and then `source .bashrc` 
 
     $ git clone https://github.com/blark/aiodnsbrute.git
     $ cd aiodnsbrute
