@@ -140,10 +140,13 @@ def main(**kwargs):
     verbosity = kwargs.get('verbosity')
     resolvers = kwargs.get('resolver_file')
     if output is not 'off':
-        outfile = kwargs.get('outfile', f'{kwargs["domain"]}')
-        # turn off output if we want JSON/CSV to stdout
+        outfile = kwargs.get('outfile')
+        # turn off output if we want JSON/CSV to stdout, hacky
         if outfile.__class__.__name__ == 'TextIOWrapper':
             verbosity = 0
+        if outfile is None:
+            # wasn't specified on command line
+            outfile = open(f'{kwargs["domain"]}.{output}', 'w')
     if resolvers:
         lines = resolvers.read().splitlines()
         resolvers = [x.strip() for x in lines if (x and not x.startswith('#'))]
