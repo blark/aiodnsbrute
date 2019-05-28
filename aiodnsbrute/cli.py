@@ -1,10 +1,12 @@
+import random
+import string
 import asyncio
 import functools
 import os
 import uvloop
 import aiodns
 import click
-import socket
+#import socket
 from tqdm import tqdm
 
 class aioDNSBrute(object):
@@ -15,6 +17,7 @@ class aioDNSBrute(object):
         self.tasks = []
         self.errors = []
         self.fqdn = []
+        self.ignore_hosts = []
         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         self.loop = asyncio.get_event_loop()
         self.resolver = aiodns.DNSResolver(loop=self.loop, rotate=True)
@@ -27,10 +30,10 @@ class aioDNSBrute(object):
             style = {'info': ('[*]', 'blue'), 'pos': ('[+]', 'green'), 'err': ('[-]', 'red'),
                      'warn': ('[!]', 'yellow'), 'dbg': ('[D]', 'cyan')}
             if msg_type is not 0:
-                decorator = click.style('{}'.format(style[msg_type][0]), fg=style[msg_type][1], bold=True)
+                decorator = click.style(f'{style[msg_type][0]}', fg=style[msg_type][1], bold=True)
             else:
                 decorator = ''
-            m = "{} {}".format(decorator, msg)
+            m = f'{decorator} {msg}'
             tqdm.write(m)
 
     async def _dns_lookup(self, name, _type='A'):
@@ -48,21 +51,22 @@ class aioDNSBrute(object):
                 err_num = future.exception().args[0]
                 err_text = future.exception().args[1]
             except IndexError:
-                self.logger("Couldn't parse exception: {}".format(future.exception()), 'err')
+                self.logger(f'Couldn\'t parse exception: {future.exception()}', 'err')
             if (err_num == 4): # This is domain name not found, ignore it.
                 pass
             elif (err_num == 12): # Timeout from DNS server
-                self.logger("Timeout for {}".format(name), 'warn', 2)
+                self.logger(f'Timeout for {name}', 'warn', 2)
             elif (err_num == 1): # Server answered with no data
                 pass
             else:
-                self.logger('{} generated an unexpected exception: {}'.format(name, future.exception()), 'err')
+                self.logger(f'{name} generated an unexpected exception: {future.exception()}', 'err')
             #self.errors.append({'hostname': name, 'error': err_text})
         # Output result
         else:
             ip = ', '.join([ip.host for ip in future.result()])
-            self.fqdn.append((name, ip))
-            self.logger("{:<30}\t{}".format(name, ip), 'pos')
+            if ip not in self.ignore_hosts:
+                self.logger(f'{name:<30}\t{ip}', 'pos')
+                self.fqdn.append({'domain': name, 'ip': [ip]})
             self.logger(future.result(), 'dbg', 3)
         self.tasks.remove(future)
         if self.verbosity >= 1:
@@ -73,26 +77,39 @@ class aioDNSBrute(object):
         for word in wordlist:
             # Wait on the semaphore before adding more tasks
             await self.sem.acquire()
-            host = '{}.{}'.format(word.strip(), domain)
+            host = f'{word.strip()}.{domain}'
             task = asyncio.ensure_future(self._dns_lookup(host))
             task.add_done_callback(functools.partial(self._dns_result_callback, host))
             self.tasks.append(task)
         await asyncio.gather(*self.tasks, return_exceptions=True)
 
-    def run(self, wordlist, domain, recursive=True):
+    def run(self, wordlist, domain, resolvers=None):
         try:
-            self.logger("Brute forcing {} with a maximum of {} concurrent tasks...".format(domain, self.max_tasks))
+            self.logger(f'Brute forcing {domain} with a maximum of {self.max_tasks} concurrent tasks...')
+            if resolvers:
+                self.resolver.nameservers = resolvers
+            self.logger(f'Using recursive DNS with the following servers: {self.resolver.nameservers}')
+
+            # wildcard response detection
+            # 63 chars is the max allowed segment length, there is practically no chance that it will be a legit record
+            random_sld = lambda: f'{"".join(random.choice(string.ascii_lowercase + string.digits) for i in range(63))}'
+            try:
+                wc_check = self.loop.run_until_complete(self._dns_lookup(f'{random_sld()}.{domain}'))
+            except aiodns.error.DNSError as err:
+                # we expect that the record will not exist and error 4 will be thrown
+                self.logger(f'No wildcard response was detected for this domain.')
+                wc_check = None
+            finally:
+                if wc_check is not None:
+                    self.ignore_hosts = [host.host for host in wc_check]
+                    self.logger(f'Wildcard response detected, ignoring answers containing {self.ignore_hosts}', 'warn')
+
             with open(wordlist) as words:
                 w = words.read().splitlines()
-            self.logger("Wordlist loaded, brute forcing {} DNS records".format(len(w)))
+            self.logger(f'Wordlist loaded, proceeding with {len(w)} DNS requests')
+
             if self.verbosity >= 1:
                 self.pbar = tqdm(total=len(w), unit="records", maxinterval=0.1, mininterval=0)
-            if recursive:
-                self.logger("Using recursive DNS with the following servers: {}".format(self.resolver.nameservers))
-            else:
-                domain_ns = self.loop.run_until_complete(self._dns_lookup(domain, 'NS'))
-                self.logger("Setting nameservers to {} domain NS servers: {}".format(domain, [host.host for host in domain_ns]))
-                self.resolver.nameservers = [socket.gethostbyname(host.host) for host in domain_ns]
             self.loop.run_until_complete(self._process_dns_wordlist(w, domain))
         except KeyboardInterrupt:
             self.logger("Caught keyboard interrupt, cleaning up...")
@@ -102,29 +119,46 @@ class aioDNSBrute(object):
             self.loop.close()
             if self.verbosity >= 1:
                 self.pbar.close()
-            self.logger("completed, {} subdomains found.".format(len(self.fqdn)))
+            self.logger(f'Completed, {len(self.fqdn)} subdomains found')
         return self.fqdn
 
+## NOTE: Remember to remove recursive stuff
 
 @click.command()
 @click.option('--wordlist', '-w', help='Wordlist to use for brute force.',
-              default='{}/wordlists/bitquark_20160227_subdomains_popular_1000'.format(os.path.dirname(os.path.realpath(__file__))))
+              default=f'{os.path.dirname(os.path.realpath(__file__))}/wordlists/bitquark_20160227_subdomains_popular_1000')
 @click.option('--max-tasks', '-t', default=512,
               help='Maximum number of tasks to run asynchronosly.')
-@click.option('--verbosity', '-v', count=True, default=1, help="Turn on/increase output.")
-@click.option('--recursive/--direct', '-r/-d', default=True, help="Recursive or direct DNS requests.")
-@click.option('--output', '-o', default=None, help="Filename to save results to (saves as CSV).")
+@click.option('--resolver-file', '-r', type=click.File('r'), default=None, help="A text file containing a list of DNS resolvers to use, one per line, comments start with #")
+@click.option('--verbosity', '-v', count=True, default=1, help="Increase output verbosity")
+@click.option('--output', '-o', type=click.Choice(['csv', 'json', 'off']), default='off', help="Output results to DOMAIN.csv/json (extension automatically appended).")
+@click.option('--outfile', '-f', type=click.File('w'), help="Output filename (omit extension). Use '-' to send output to stdout overriding normal output.")
 @click.argument('domain', required=True)
-def main(wordlist, domain, max_tasks, verbosity, recursive, output):
+def main(**kwargs):
     """Brute force DNS domain names asynchronously"""
-    import csv
-    bf = aioDNSBrute(verbosity=verbosity, max_tasks=max_tasks)
-    results = bf.run(wordlist=wordlist, domain=domain, recursive=recursive)
-    if output is not None:
-        with open(output, "w") as csv_file:
-            writer = csv.writer(csv_file)
-            writer.writerow(['Hostname', 'IPs'])
-            writer.writerows(results)
+    output = kwargs.get('output')
+    verbosity = kwargs.get('verbosity')
+    resolvers = kwargs.get('resolver_file')
+    if output is not 'off':
+        outfile = kwargs.get('outfile', f'{kwargs["domain"]}')
+        # turn off output if we want JSON/CSV to stdout
+        if outfile.__class__.__name__ == 'TextIOWrapper':
+            verbosity = 0
+    if resolvers:
+        lines = resolvers.read().splitlines()
+        resolvers = [x.strip() for x in lines if (x and not x.startswith('#'))]
+
+    bf = aioDNSBrute(verbosity=verbosity, max_tasks=kwargs.get('max_tasks'))
+    results = bf.run(wordlist=kwargs.get('wordlist'), domain=kwargs.get('domain'), resolvers=resolvers)
+
+    if output in ('json'):
+        import json
+        json.dump(results, outfile)
+    if output in ('csv'):
+        import csv
+        writer = csv.writer(outfile)
+        writer.writerow(['Hostname', 'IPs'])
+        [writer.writerow([r.get('domain'), r.get('ip')[0]]) for r in results]
 
 if __name__ == '__main__':
     main()

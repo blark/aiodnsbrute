@@ -1,0 +1,12 @@
+v0.1.0
+
+- first version
+
+v0.2.0
+
+- switched to f-strings
+- removed direct dns request feature
+- added ability to read dns resolvers from file (or stdin with `-r -`)
+- added json output format
+- added ability to send output to stdout with `-f -` (suppresses normal output)
+- added wildcard response detection

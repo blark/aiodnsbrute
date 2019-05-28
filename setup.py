@@ -7,7 +7,7 @@ dependencies = ['click', 'asyncio', 'uvloop', 'tqdm', 'aiodns']
 
 setup(
     name='aiodnsbrute',
-    version='0.1.0',
+    version='0.2.0',
     url='https://github.com/blark/aiodnsbrute',
     license='BSD',
     author='Mark Baseggio',
