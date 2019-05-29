@@ -9,4 +9,5 @@ v0.2.0
 - added ability to read dns resolvers from file (or stdin with `-r -`)
 - added json output format
 - added ability to send output to stdout with `-f -` (suppresses normal output)
-- added wildcard response detection
+- added wildcard response detection (user configurable)
+- added domain test to see if parent domain actually exists (user configurable)

@@ -6,7 +6,8 @@ import os
 import uvloop
 import aiodns
 import click
-#import socket
+import socket
+import sys
 from tqdm import tqdm
 
 class aioDNSBrute(object):
@@ -83,34 +84,40 @@ class aioDNSBrute(object):
             self.tasks.append(task)
         await asyncio.gather(*self.tasks, return_exceptions=True)
 
-    def run(self, wordlist, domain, resolvers=None, wildcard=True):
+    def run(self, wordlist, domain, resolvers=None, wildcard=True, verify=True):
+        self.logger(f'Brute forcing {domain} with a maximum of {self.max_tasks} concurrent tasks...')
+        if verify:
+            self.logger(f'Using local resolver to verify {domain} exists.')
+            try:
+                socket.gethostbyname(domain)
+            except socket.gaierror as err:
+                self.logger(f'Couldn\'t resolve {domain}, use the --no-verify switch to ignore this error.', 'err')
+                raise SystemExit(self.logger(f'Error from host lookup: {err}', 'err'))
+        else:
+            self.logger('Skipping domain verification. YOLO!', 'warn')
+        if resolvers:
+            self.resolver.nameservers = resolvers
+        self.logger(f'Using recursive DNS with the following servers: {self.resolver.nameservers}')
+        if wildcard:
+            # 63 chars is the max allowed segment length, there is practically no chance that it will be a legit record
+            random_sld = lambda: f'{"".join(random.choice(string.ascii_lowercase + string.digits) for i in range(63))}'
+            try:
+                wc_check = self.loop.run_until_complete(self._dns_lookup(f'{random_sld()}.{domain}'))
+            except aiodns.error.DNSError as err:
+                # we expect that the record will not exist and error 4 will be thrown
+                self.logger(f'No wildcard response was detected for this domain.')
+                wc_check = None
+            finally:
+                if wc_check is not None:
+                    self.ignore_hosts = [host.host for host in wc_check]
+                    self.logger(f'Wildcard response detected, ignoring answers containing {self.ignore_hosts}', 'warn')
+        else:
+            self.logger('Wildcard detection is disabled', 'warn')
+
+        with open(wordlist, encoding='utf-8', errors='ignore') as words:
+            w = words.read().splitlines()
+        self.logger(f'Wordlist loaded, proceeding with {len(w)} DNS requests')
         try:
-            self.logger(f'Brute forcing {domain} with a maximum of {self.max_tasks} concurrent tasks...')
-            if resolvers:
-                self.resolver.nameservers = resolvers
-            self.logger(f'Using recursive DNS with the following servers: {self.resolver.nameservers}')
-
-            if wildcard:
-                # wildcard response detection
-                # 63 chars is the max allowed segment length, there is practically no chance that it will be a legit record
-                random_sld = lambda: f'{"".join(random.choice(string.ascii_lowercase + string.digits) for i in range(63))}'
-                try:
-                    wc_check = self.loop.run_until_complete(self._dns_lookup(f'{random_sld()}.{domain}'))
-                except aiodns.error.DNSError as err:
-                    # we expect that the record will not exist and error 4 will be thrown
-                    self.logger(f'No wildcard response was detected for this domain.')
-                    wc_check = None
-                finally:
-                    if wc_check is not None:
-                        self.ignore_hosts = [host.host for host in wc_check]
-                        self.logger(f'Wildcard response detected, ignoring answers containing {self.ignore_hosts}', 'warn')
-            else:
-                self.logger('Wildcard detection is disabled', 'warn')
-
-            with open(wordlist, encoding='utf-8', errors='ignore') as words:
-                w = words.read().splitlines()
-            self.logger(f'Wordlist loaded, proceeding with {len(w)} DNS requests')
-
             if self.verbosity >= 1:
                 self.pbar = tqdm(total=len(w), unit="records", maxinterval=0.1, mininterval=0)
             self.loop.run_until_complete(self._process_dns_wordlist(w, domain))
@@ -137,6 +144,7 @@ class aioDNSBrute(object):
 @click.option('--output', '-o', type=click.Choice(['csv', 'json', 'off']), default='off', help="Output results to DOMAIN.csv/json (extension automatically appended when not using -f).")
 @click.option('--outfile', '-f', type=click.File('w'), help="Output filename. Use '-f -' to send file output to stdout overriding normal output.")
 @click.option('--wildcard/--no-wildcard', default=True, help="Wildcard detection, enabled by default")
+@click.option('--verify/--no-verify', default=True, help="Verify domain name is sane before beginning, enabled by default")
 @click.version_option('0.2.0')
 @click.argument('domain', required=True)
 def main(**kwargs):
@@ -160,7 +168,7 @@ def main(**kwargs):
         resolvers = [x.strip() for x in lines if (x and not x.startswith('#'))]
 
     bf = aioDNSBrute(verbosity=verbosity, max_tasks=kwargs.get('max_tasks'))
-    results = bf.run(wordlist=kwargs.get('wordlist'), domain=kwargs.get('domain'), resolvers=resolvers, wildcard=kwargs.get('wildcard'))
+    results = bf.run(wordlist=kwargs.get('wordlist'), domain=kwargs.get('domain'), resolvers=resolvers, wildcard=kwargs.get('wildcard'), verify=kwargs.get('verify'))
 
     if output in ('json'):
         import json

@@ -94,8 +94,8 @@ Supply a list of resolvers from file (ignoring blank lines and starting with #),
 
 ## Thanks
 
-- The wordlists are from [bitquark's](https://github.com/bitquark) [dnspop](https://github.com/bitquark/dnspop) repo.
-- Creds to [Sublist3r](https://github.com/aboul3la/Sublist3r) for pointing me there.
+- Wordlists are from [bitquark's](https://github.com/bitquark) [dnspop](https://github.com/bitquark/dnspop) repo (except the 10 mil entry one which I created using his tool).
+  - Creds to [Sublist3r](https://github.com/aboul3la/Sublist3r) for pointing me there.
 
 ## Notes
 
