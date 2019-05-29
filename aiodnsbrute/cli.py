@@ -135,11 +135,15 @@ class aioDNSBrute(object):
 @click.option('--resolver-file', '-r', type=click.File('r'), default=None, help="A text file containing a list of DNS resolvers to use, one per line, comments start with #. Default: use system resolvers")
 @click.option('--verbosity', '-v', count=True, default=1, help="Increase output verbosity")
 @click.option('--output', '-o', type=click.Choice(['csv', 'json', 'off']), default='off', help="Output results to DOMAIN.csv/json (extension automatically appended when not using -f).")
-@click.option('--outfile', '-f', type=click.File('w'), help="Output filename (omit extension). Use '-' to send output to stdout overriding normal output.")
+@click.option('--outfile', '-f', type=click.File('w'), help="Output filename. Use '-f -' to send file output to stdout overriding normal output.")
 @click.option('--wildcard/--no-wildcard', default=True, help="Wildcard detection, enabled by default")
+@click.version_option('0.2.0')
 @click.argument('domain', required=True)
 def main(**kwargs):
-    """Brute force DNS domain names asynchronously"""
+    """aiodnsbrute is a command line tool for brute forcing domain names utilizing Python's asyncio module.
+
+    credit: blark (@markbaseggio)
+    """
     output = kwargs.get('output')
     verbosity = kwargs.get('verbosity')
     resolvers = kwargs.get('resolver_file')
