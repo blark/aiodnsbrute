@@ -46,9 +46,12 @@ Get help:
 
     $ aiodnsbrute --help
 
-    Usage: cli.py [OPTIONS] DOMAIN
+    Usage: aiodnsbrute [OPTIONS] DOMAIN
 
-      Brute force DNS domain names asynchronously
+      aiodnsbrute is a command line tool for brute forcing domain names
+      utilizing Python's asyncio module.
+
+      credit: blark (@markbaseggio)
 
     Options:
       -w, --wordlist TEXT           Wordlist to use for brute force.
@@ -59,12 +62,13 @@ Get help:
       -v, --verbosity               Increase output verbosity
       -o, --output [csv|json|off]   Output results to DOMAIN.csv/json (extension
                                     automatically appended when not using -f).
-      -f, --outfile FILENAME        Output filename. Use '-' to
-                                    send output to stdout overriding normal
-                                    output.
+      -f, --outfile FILENAME        Output filename. Use '-f -' to send file
+                                    output to stdout overriding normal output.
       --wildcard / --no-wildcard    Wildcard detection, enabled by default
+      --verify / --no-verify        Verify domain name is sane before beginning,
+                                    enabled by default
+      --version                     Show the version and exit.
       --help                        Show this message and exit.
-
 
 ### Examples
 
