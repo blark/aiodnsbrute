@@ -76,6 +76,10 @@ Run a brute force, supppess normal output and send only JSON to stdout:
 
     $ aiodnbrute -f - -o json domain.com
 
+...for an advanced pattern, use custom resovers and pipe output into the awesome [jq](https://stedolan.github.io/jq/):
+
+    $ aiodnsbrute -r resolvers.txt -f - -o json google.com | jq '.[] | select(.ip[] | startswith("172."))'
+
 Wildcard detection enabled by default (--no-wildcard turns it off):
 
     $ aiodnsbrute foo.com
