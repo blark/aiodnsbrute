@@ -14,7 +14,6 @@ setup(
     author_email='mark@basegg.io',
     description='Brute force DNS domain names asynchronously',
     long_description=__doc__,
-    packages=find_packages(exclude=['tests']),
     include_package_data=True,
     package_data={'aiodnsbrute': ['wordlists/*']},
     zip_safe=False,
