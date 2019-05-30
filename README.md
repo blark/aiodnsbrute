@@ -91,6 +91,9 @@ Supply a list of resolvers from file (ignoring blank lines and starting with #),
 
 - Wordlists are from [bitquark's](https://github.com/bitquark) [dnspop](https://github.com/bitquark/dnspop) repo (except the 10 mil entry one which I created using his tool).
   - Creds to [Sublist3r](https://github.com/aboul3la/Sublist3r) for pointing me there.
+- [Click](https://click.palletsprojects.com/en/7.x/) for making CLI apps so easy.
+- [tqdm](https://github.com/tqdm/tqdm) powers the pretty progress bar!
+- [aiodns](https://github.com/saghul/aiodns) for providing the Python async interface to pycares which makes this all possible!
 
 ## Notes
 
