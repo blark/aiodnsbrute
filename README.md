@@ -14,27 +14,14 @@ A Python 3.5+ tool that uses asyncio to brute force domain names asynchronously.
 
 # Installation
 
-If you don't use `pipsi`, you're missing out.
-Here are [installation instructions](https://github.com/mitsuhiko/pipsi#readme).
+    $ pip install aiodnsbrute
 
-## Debian/Kali/Ubuntu
-
-The following should get you up and running.
-
-    $ sudo apt-get install python3-pip
-    $ sudo pip3 install virtualenv
-    $ curl https://raw.githubusercontent.com/mitsuhiko/pipsi/master/get-pipsi.py | python3
-
-NOTE: pipsi installs each package into `~/.local/venvs/PKGNAME` and then symlinks all new scripts into `~/.local/bin`
-so add `~/.local/bin` to your .bashrc and then `source .bashrc`
-
-    $ git clone https://github.com/blark/aiodnsbrute.git
-    $ cd aiodnsbrute
-    $ pipsi install .
+Note: using a [virtualenv](https://virtualenv.pypa.io/en/latest/userguide/#usage) is highly recommended.
 
 ## Alternate install
 
 Alternately you can install the usual way:
+
 
     $ git clone https://github.com/blark/aiodnsbrute.git
     $ cd aiodnsbrute

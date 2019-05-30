@@ -145,7 +145,7 @@ class aioDNSBrute(object):
 @click.option('--outfile', '-f', type=click.File('w'), help="Output filename. Use '-f -' to send file output to stdout overriding normal output.")
 @click.option('--wildcard/--no-wildcard', default=True, help="Wildcard detection, enabled by default")
 @click.option('--verify/--no-verify', default=True, help="Verify domain name is sane before beginning, enabled by default")
-@click.version_option('0.2.0')
+@click.version_option('0.2.1')
 @click.argument('domain', required=True)
 def main(**kwargs):
     """aiodnsbrute is a command line tool for brute forcing domain names utilizing Python's asyncio module.
