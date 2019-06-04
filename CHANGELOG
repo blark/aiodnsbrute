@@ -1,9 +1,7 @@
 v0.1.0
-
 - first version
 
 v0.2.0
-
 - switched to f-strings
 - removed direct dns request feature
 - added ability to read dns resolvers from file (or stdin with `-r -`)
@@ -11,3 +9,10 @@ v0.2.0
 - added ability to send output to stdout with `-f -` (suppresses normal output)
 - added wildcard response detection (user configurable)
 - added domain test to see if parent domain actually exists (user configurable)
+
+v0.3.0
+- added gethostbyname lookup method which can identify when CNAMEs have been resolved by c-ares
+- reformatted source code with [black](https://github.com/python/black)
+- moved logger into its own class using attribute name instead of parameter for log types
+- fixed CSV output (None list problem when using .get)
+- added cname and aliases to output when -o is specified

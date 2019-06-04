@@ -33,7 +33,7 @@ Get help:
 
     $ aiodnsbrute --help
 
-    Usage: aiodnsbrute [OPTIONS] DOMAIN
+    Usage: cli.py [OPTIONS] DOMAIN
 
       aiodnsbrute is a command line tool for brute forcing domain names
       utilizing Python's asyncio module.
@@ -51,6 +51,8 @@ Get help:
                                     automatically appended when not using -f).
       -f, --outfile FILENAME        Output filename. Use '-f -' to send file
                                     output to stdout overriding normal output.
+      --query / --gethostbyname     DNS lookup type to use query (default) should
+                                    be faster, but won't return CNAME information.
       --wildcard / --no-wildcard    Wildcard detection, enabled by default
       --verify / --no-verify        Verify domain name is sane before beginning,
                                     enabled by default
@@ -82,6 +84,10 @@ Wildcard detection enabled by default (--no-wildcard turns it off):
     [+] www.foo.com                         52.73.176.251, 52.4.225.20
     100%|██████████████████████████████████████████████████████████████████████████████| 1000/1000 [00:05<00:00, 140.18records/s]
     [*] Completed, 1 subdomains found
+
+**NEW** use gethostbyname (detects CNAMEs which can be handy for potential subdomain takeover detection)
+
+    $ aiodnsbrute --gethostbyname domain.com
 
 Supply a list of resolvers from file (ignoring blank lines and starting with #), specify `-r -` to read list from stdin.
 
