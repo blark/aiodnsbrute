@@ -90,12 +90,12 @@ class aioDNSBrute(object):
         # parse and output and store results.
         else:
             if self.lookup_type == "query":
-                ip = ", ".join([ip.host for ip in future.result()])
+                ips = [ip.host for ip in future.result()]
                 cname = False
-                row = f"{name:<30}\t{ip}"
+                row = f"{name:<30}\t{ips}"
             elif self.lookup_type == "gethostbyname":
                 r = future.result()
-                ip = ", ".join([ip for ip in r.addresses])
+                ips = [ip for ip in r.addresses]
                 if name == r.name:
                     cname = False
                     n = f"""{name:<30}\t{f"{'':<35}" if self.verbosity >= 2 else ""}"""
@@ -104,12 +104,12 @@ class aioDNSBrute(object):
                     # format the name based on verbosity - this is kluge
                     short_cname = f"{r.name[:28]}.." if len(r.name) > 30 else r.name
                     n = f'{name}{"**" if self.verbosity <= 1 else ""}'
-                    n = f'{n:<30}\t{f"CNAME {short_cname:<30}" if self.verbosity >= 2 else ""}'
-                row = f"{n:<30}\t{ip}"
+                    n = f'''{n:<30}\t{f"CNAME {short_cname:<30}" if self.verbosity >= 2 else ""}'''
+                row = f"{n:<30}\t{ips}"
             # store the result
-            if ip not in self.ignore_hosts:
+            if set(ips) != set(self.ignore_hosts):
                 self.logger.success(row)
-                dns_lookup_result = {"domain": name, "ip": [ip]}
+                dns_lookup_result = {"domain": name, "ip": ips}
                 if self.lookup_type == "gethostbyname" and cname:
                     dns_lookup_result["cname"] = r.name
                     dns_lookup_result["aliases"] = r.aliases
@@ -177,23 +177,13 @@ class aioDNSBrute(object):
             f"Using recursive DNS with the following servers: {self.resolver.nameservers}"
         )
 
-        if query:
-            self.logger.info(
-                "Using pycares `query` function to perform lookups, CNAMEs cannot be identified"
-            )
-            self.lookup_type = "query"
-        else:
-            self.logger.info(
-                "Using pycares `gethostbyname` function to perform lookups, CNAME data will be appended to results (** denotes CNAME, show actual name with -vv)"
-            )
-            self.lookup_type = "gethostbyname"
-
         if wildcard:
             # 63 chars is the max allowed segment length, there is practically no chance that it will be a legit record
             random_sld = (
                 lambda: f'{"".join(random.choice(string.ascii_lowercase + string.digits) for i in range(63))}'
             )
             try:
+                self.lookup_type = "query"
                 wc_check = self.loop.run_until_complete(
                     self._dns_lookup(f"{random_sld()}.{domain}")
                 )
@@ -211,6 +201,17 @@ class aioDNSBrute(object):
                     )
         else:
             self.logger.warn("Wildcard detection is disabled")
+
+        if query:
+            self.logger.info(
+                "Using pycares `query` function to perform lookups, CNAMEs cannot be identified"
+            )
+            self.lookup_type = "query"
+        else:
+            self.logger.info(
+                "Using pycares `gethostbyname` function to perform lookups, CNAME data will be appended to results (** denotes CNAME, show actual name with -vv)"
+            )
+            self.lookup_type = "gethostbyname"
 
         with open(wordlist, encoding="utf-8", errors="ignore") as words:
             w = words.read().splitlines()
