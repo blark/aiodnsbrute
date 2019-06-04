@@ -32,7 +32,7 @@ class aioDNSBrute(object):
         self.sem = asyncio.BoundedSemaphore(max_tasks)
         self.max_tasks = max_tasks
         self.verbosity = verbosity
-        self.new_logger = ConsoleLogger(verbosity)
+        self.logger = ConsoleLogger(verbosity)
 
     async def _dns_lookup(self, name):
         """Performs a DNS request using aiodns, self.lookup_type is set by the run function.
@@ -69,19 +69,19 @@ class aioDNSBrute(object):
                 err_number = future.exception().args[0]
                 err_text = future.exception().args[1]
             except IndexError:
-                self.new_logger.error(f"Couldn't parse exception: {future.exception()}")
+                self.logger.error(f"Couldn't parse exception: {future.exception()}")
             # handle the DNS errors we expect to receive, show user unexpected errors
             if err_number == 4:
                 # This is domain name not found, ignore it
                 pass
             elif err_number == 12:
                 # Timeout from DNS server
-                self.new_logger.warn(f"Timeout for {name}")
+                self.logger.warn(f"Timeout for {name}")
             elif err_number == 1:
                 # Server answered with no data
                 pass
             else:
-                self.new_logger.error(
+                self.logger.error(
                     f"{name} generated an unexpected exception: {future.exception()}"
                 )
             # for debugging/troubleshoooting keep a list of errors
@@ -108,13 +108,13 @@ class aioDNSBrute(object):
                 row = f"{n:<30}\t{ip}"
             # store the result
             if ip not in self.ignore_hosts:
-                self.new_logger.success(row)
+                self.logger.success(row)
                 dns_lookup_result = {"domain": name, "ip": [ip]}
                 if self.lookup_type == "gethostbyname" and cname:
                     dns_lookup_result["cname"] = r.name
                     dns_lookup_result["aliases"] = r.aliases
                 self.fqdn.append(dns_lookup_result)
-            self.new_logger.debug(future.result())
+            self.logger.debug(future.result())
         self.tasks.remove(future)
         if self.verbosity >= 1:
             self.pbar.update()
@@ -155,35 +155,35 @@ class aioDNSBrute(object):
         Returns:
             dict containing result of lookups
         """
-        self.new_logger.info(
+        self.logger.info(
             f"Brute forcing {domain} with a maximum of {self.max_tasks} concurrent tasks..."
         )
         if verify:
-            self.new_logger.info(f"Using local resolver to verify {domain} exists.")
+            self.logger.info(f"Using local resolver to verify {domain} exists.")
             try:
                 socket.gethostbyname(domain)
             except socket.gaierror as err:
-                self.new_logger.error(
+                self.logger.error(
                     f"Couldn't resolve {domain}, use the --no-verify switch to ignore this error."
                 )
                 raise SystemExit(
-                    self.new_logger.error(f"Error from host lookup: {err}")
+                    self.logger.error(f"Error from host lookup: {err}")
                 )
         else:
-            self.new_logger.warn("Skipping domain verification. YOLO!")
+            self.logger.warn("Skipping domain verification. YOLO!")
         if resolvers:
             self.resolver.nameservers = resolvers
-        self.new_logger.info(
+        self.logger.info(
             f"Using recursive DNS with the following servers: {self.resolver.nameservers}"
         )
 
         if query:
-            self.new_logger.info(
+            self.logger.info(
                 "Using pycares `query` function to perform lookups, CNAMEs cannot be identified"
             )
             self.lookup_type = "query"
         else:
-            self.new_logger.info(
+            self.logger.info(
                 "Using pycares `gethostbyname` function to perform lookups, CNAME data will be appended to results (** denotes CNAME, show actual name with -vv)"
             )
             self.lookup_type = "gethostbyname"
@@ -199,22 +199,22 @@ class aioDNSBrute(object):
                 )
             except aiodns.error.DNSError as err:
                 # we expect that the record will not exist and error 4 will be thrown
-                self.new_logger.info(
+                self.logger.info(
                     f"No wildcard response was detected for this domain."
                 )
                 wc_check = None
             finally:
                 if wc_check is not None:
                     self.ignore_hosts = [host.host for host in wc_check]
-                    self.new_logger.warn(
+                    self.logger.warn(
                         f"Wildcard response detected, ignoring answers containing {self.ignore_hosts}"
                     )
         else:
-            self.new_logger.warn("Wildcard detection is disabled")
+            self.logger.warn("Wildcard detection is disabled")
 
         with open(wordlist, encoding="utf-8", errors="ignore") as words:
             w = words.read().splitlines()
-        self.new_logger.info(f"Wordlist loaded, proceeding with {len(w)} DNS requests")
+        self.logger.info(f"Wordlist loaded, proceeding with {len(w)} DNS requests")
         try:
             if self.verbosity >= 1:
                 self.pbar = tqdm(
@@ -222,14 +222,14 @@ class aioDNSBrute(object):
                 )
             self.loop.run_until_complete(self._queue_lookups(w, domain))
         except KeyboardInterrupt:
-            self.new_logger.warn("Caught keyboard interrupt, cleaning up...")
+            self.logger.warn("Caught keyboard interrupt, cleaning up...")
             asyncio.gather(*asyncio.Task.all_tasks()).cancel()
             self.loop.stop()
         finally:
             self.loop.close()
             if self.verbosity >= 1:
                 self.pbar.close()
-            self.new_logger.info(f"Completed, {len(self.fqdn)} subdomains found")
+            self.logger.info(f"Completed, {len(self.fqdn)} subdomains found")
         return self.fqdn
 
 
