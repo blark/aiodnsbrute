@@ -276,6 +276,11 @@ class aioDNSBrute(object):
     help="DNS lookup type to use query (default) should be faster, but won't return CNAME information.",
 )
 @click.option(
+    "--recursive/--no-recursive",
+    default=False,
+    help="Adds a level of recursion to the scan.",
+)
+@click.option(
     "--wildcard/--no-wildcard",
     default=True,
     help="Wildcard detection, enabled by default",
@@ -295,6 +300,8 @@ def main(**kwargs):
     output = kwargs.get("output")
     verbosity = kwargs.get("verbosity")
     resolvers = kwargs.get("resolver_file")
+    recursive = kwargs.get("recursive")
+
     if output is not "off":
         outfile = kwargs.get("outfile")
         # turn off output if we want JSON/CSV to stdout, hacky
@@ -316,6 +323,22 @@ def main(**kwargs):
         verify=kwargs.get("verify"),
         query=kwargs.get("query"),
     )
+
+    if recursive:
+        # copy it to not modify the collection during iteration
+        results_copy = results.copy()
+
+        # Add recursion
+        for single_result in results_copy:
+            ConsoleLogger(verbosity).debug('====================')
+            ConsoleLogger(verbosity).debug(f'Starting {single_result["domain"]}')
+
+            bf = aioDNSBrute(verbosity=verbosity, max_tasks=kwargs.get("max_tasks"))
+
+            run_results = bf.run(wordlist=kwargs.get("wordlist"), domain=single_result['domain'], resolvers=resolvers,
+                                  wildcard=kwargs.get("wildcard"), verify=kwargs.get("verify"), query=kwargs.get("query"), )
+            if len(run_results) > 0:
+                results.append(run_results[0])
 
     if output in ("json"):
         import json
