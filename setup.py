@@ -3,7 +3,7 @@ Brute force DNS domain names asynchronously
 """
 from setuptools import find_packages, setup
 
-dependencies = ['click', 'asyncio', 'uvloop', 'tqdm', 'aiodns']
+dependencies = ['click', 'uvloop', 'tqdm', 'aiodns']
 
 setup(
     name='aiodnsbrute',
