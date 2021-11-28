@@ -42,7 +42,7 @@ Get help:
 
     Options:
       -w, --wordlist TEXT           Wordlist to use for brute force.
-      -t, --max-tasks INTEGER       Maximum number of tasks to run asynchronosly.
+      -t, --max-tasks INTEGER       Maximum number of tasks to run asynchronosly. Default is 512.
       -r, --resolver-file FILENAME  A text file containing a list of DNS resolvers
                                     to use, one per line, comments start with #.
                                     Default: use system resolvers
