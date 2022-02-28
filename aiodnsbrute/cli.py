@@ -12,9 +12,7 @@ from io import IOBase
 from importlib import metadata
 from tqdm import tqdm
 from aiodnsbrute.logger import ConsoleLogger
-from aiodnsbrute._version import _version
 
-from pprint import pformat
 
 class aioDNSBrute(object):
     """aiodnsbrute implements fast domain name brute forcing using Python's asyncio module."""
