@@ -289,21 +289,23 @@ class aioDNSBrute(object):
     default=True,
     help="Verify domain name is sane before beginning, enabled by default",
 )
-@click.version_option(_version)
-@click.argument("domain", required=True, is_eager=True)
+@click.version_option(metadata.version('aiodnsbrute'))
+@click.argument("domain", required=True)
 def main(**kwargs):
-    """aiodnsbrute is a command line tool for brute forcing domain names utilizing Python's asyncio module.
+    """aiodnsbrute is a command line tool for brute forcing domain names using Python asyncio.
 
     credit: blark (@markbaseggio)
     """
     output = kwargs.get("output")
     verbosity = kwargs.get("verbosity")
     resolvers = kwargs.get("resolver_file")
+
     if output != "off":
         outfile = kwargs.get("outfile")
         if isinstance(outfile, IOBase) and outfile.name == "<stdout>":
            verbosity = 0
     if resolvers:
+
         lines = resolvers.read().splitlines()
         resolvers = [x.strip() for x in lines if (x and not x.startswith("#"))]
 
