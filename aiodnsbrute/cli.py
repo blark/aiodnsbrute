@@ -8,9 +8,13 @@ import aiodns
 import click
 import socket
 import sys
+from io import IOBase
+from importlib import metadata
 from tqdm import tqdm
 from aiodnsbrute.logger import ConsoleLogger
+from aiodnsbrute._version import _version
 
+from pprint import pformat
 
 class aioDNSBrute(object):
     """aiodnsbrute implements fast domain name brute forcing using Python's asyncio module."""
@@ -263,12 +267,14 @@ class aioDNSBrute(object):
     type=click.Choice(["csv", "json", "off"]),
     default="off",
     help="Output results to DOMAIN.csv/json (extension automatically appended when not using -f).",
+    is_eager=True,
 )
 @click.option(
     "--outfile",
     "-f",
     type=click.File("w"),
     help="Output filename. Use '-f -' to send file output to stdout overriding normal output.",
+    callback=lambda ctx, param, val: val if val is not None else click.utils.LazyFile(filename=f"{ctx.params['domain']}.{ctx.params['output']}", mode="wt")
 )
 @click.option(
     "--query/--gethostbyname",
@@ -285,8 +291,8 @@ class aioDNSBrute(object):
     default=True,
     help="Verify domain name is sane before beginning, enabled by default",
 )
-@click.version_option("0.3.2")
-@click.argument("domain", required=True)
+@click.version_option(_version)
+@click.argument("domain", required=True, is_eager=True)
 def main(**kwargs):
     """aiodnsbrute is a command line tool for brute forcing domain names utilizing Python's asyncio module.
 
@@ -295,14 +301,10 @@ def main(**kwargs):
     output = kwargs.get("output")
     verbosity = kwargs.get("verbosity")
     resolvers = kwargs.get("resolver_file")
-    if output is not "off":
+    if output != "off":
         outfile = kwargs.get("outfile")
-        # turn off output if we want JSON/CSV to stdout, hacky
-        if outfile.__class__.__name__ == "TextIOWrapper":
-            verbosity = 0
-        if outfile is None:
-            # wasn't specified on command line
-            outfile = open(f'{kwargs["domain"]}.{output}', "w")
+        if isinstance(outfile, IOBase) and outfile.name == "<stdout>":
+           verbosity = 0
     if resolvers:
         lines = resolvers.read().splitlines()
         resolvers = [x.strip() for x in lines if (x and not x.startswith("#"))]

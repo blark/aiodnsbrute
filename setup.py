@@ -3,13 +3,11 @@ Brute force DNS domain names asynchronously
 """
 from setuptools import find_packages, setup
 
-dependencies = ['click', 'asyncio', 'uvloop', 'tqdm', 'aiodns']
 
 setup(
     name='aiodnsbrute',
-    version='0.3.2',
+    version='0.3.3',
     url='https://github.com/blark/aiodnsbrute',
-    download_url='https://github.com/blark/aiodnsbrute/archive/v0.3.2.tar.gz',
     license='BSD',
     author='Mark Baseggio',
     author_email='mark@basegg.io',
@@ -20,8 +18,13 @@ setup(
     package_data={'aiodnsbrute': ['wordlists/*']},
     zip_safe=False,
     platforms='any',
-    python_requires='>=3.5',
-    install_requires=dependencies,
+    python_requires='>=3.8',
+    install_requires=[
+        'click',
+        'uvloop',
+        'tqdm',
+        'aiodns',
+	],
     entry_points={
         'console_scripts': [
             'aiodnsbrute = aiodnsbrute.cli:main',
