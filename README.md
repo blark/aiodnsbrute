@@ -20,7 +20,7 @@ A Python 3.5+ tool that uses asyncio to brute force domain names asynchronously.
 
 Using a [virtualenv](https://virtualenv.pypa.io/en/latest/userguide/#usage) is highly recommended. [Pipx](https://github.com/pypa/pipx) is awesome. It takes care of the virtual environment for you. Once you've installed pipx it you can install aiodnsbrute with:
 
-    $ pix install git+https://github.com/blark/aiodnsbrute.git
+    $ pipx install git+https://github.com/blark/aiodnsbrute.git
 
 If you're a risk taker, install the dev branch (`--suffix` is optional incase you want two versions to coexist).
 
