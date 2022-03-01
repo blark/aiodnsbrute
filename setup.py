@@ -18,7 +18,7 @@ setup(
     package_data={'aiodnsbrute': ['wordlists/*']},
     zip_safe=False,
     platforms='any',
-    python_requires='>=3.8',
+    python_requires='>=3.5',
     install_requires=[
         'click',
         'uvloop',
