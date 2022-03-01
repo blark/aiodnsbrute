@@ -18,11 +18,14 @@ A Python 3.5+ tool that uses asyncio to brute force domain names asynchronously.
 
 ## Recommended install
 
-Using a [virtualenv](https://virtualenv.pypa.io/en/latest/userguide/#usage) is highly recommended.
+Using a [virtualenv](https://virtualenv.pypa.io/en/latest/userguide/#usage) is highly recommended. [Pipx](https://github.com/pypa/pipx) is awesome. It takes care of the virtual environment for you. Once you've installed pipx it you can install aiodnsbrute with:
 
-[Pipx](https://github.com/pypa/pipx) is awesome. It takes care of isolating the app for you. Once you've installed it you can install with:
+    $ pix install git+https://github.com/blark/aiodnsbrute.git
 
-   $ pix install git+https://github.com/blark/aiodnsbrute.git
+If you're a risk taker, install the dev branch (`--suffix` is optional incase you want two versions to coexist).
+
+    $ pipx install --suffix dev git+https://github.com/blark/aiodnsbrute.git@dev
+
 
 ## Alternately, you can install the usual way:
 
@@ -37,12 +40,12 @@ Get help:
     $ aiodnsbrute --help
 
     Usage: aiodnsbrutedev [OPTIONS] DOMAIN
-    
+
       aiodnsbrute is a command line tool for brute forcing domain names using
       Python asyncio.
-    
+
       credit: blark (@markbaseggio)
-    
+
     Options:
       -w, --wordlist TEXT           Wordlist to use for brute force.  [default:
                                     /Users/blark/src/aiodnsbrute-dev/aiodnsbrute/w
