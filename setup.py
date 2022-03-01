@@ -8,7 +8,7 @@ setup(
     name='aiodnsbrute',
     version='0.3.3',
     url='https://github.com/blark/aiodnsbrute',
-    license='BSD',
+    license='GPLv3',
     author='Mark Baseggio',
     author_email='mark@basegg.io',
     description='Brute force DNS domain names asynchronously',
