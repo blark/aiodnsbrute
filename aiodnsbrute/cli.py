@@ -8,6 +8,7 @@ import aiodns
 import click
 import socket
 import sys
+import typing
 from io import IOBase
 from importlib import metadata
 from tqdm import tqdm
@@ -17,7 +18,7 @@ from aiodnsbrute.logger import ConsoleLogger
 class aioDNSBrute(object):
     """aiodnsbrute implements fast domain name brute forcing using Python's asyncio module."""
 
-    def __init__(self, verbosity=0, max_tasks=512):
+    def __init__(self, verbosity: int = 0, max_tasks: int = 512) -> None:
         """Constructor.
 
         Args:
@@ -36,7 +37,7 @@ class aioDNSBrute(object):
         self.verbosity = verbosity
         self.logger = ConsoleLogger(verbosity)
 
-    async def _dns_lookup(self, name):
+    async def _dns_lookup(self, name: str) -> asyncio.Future:
         """Performs a DNS request using aiodns, self.lookup_type is set by the run function.
         A query for A record returns <ares_query_a_result> which does not return metadata about
         when a CNAME was resolved (just host and ttl attributes) however it should be faster.
@@ -54,7 +55,7 @@ class aioDNSBrute(object):
         elif self.lookup_type == "gethostbyname":
             return await self.resolver.gethostbyname(name, socket.AF_INET)
 
-    def _dns_result_callback(self, name, future):
+    def _dns_result_callback(self, name: str, future: asyncio.Future) -> None:
         """Handles the pycares object passed by the _dns_lookup function. We expect an errror to
         be present in the returned object because most lookups will be for names that don't exist.
         c-ares errors are passed through directly, error types can be identified in ares_strerror.c
@@ -65,6 +66,7 @@ class aioDNSBrute(object):
         """
         # Record processed we can now release the lock
         self.sem.release()
+
         # Handle known exceptions, barf on other ones
         if future.exception() is not None:
             try:
@@ -106,7 +108,7 @@ class aioDNSBrute(object):
                     # format the name based on verbosity - this is kluge
                     short_cname = f"{r.name[:28]}.." if len(r.name) > 30 else r.name
                     n = f'{name}{"**" if self.verbosity <= 1 else ""}'
-                    n = f'''{n:<30}\t{f"CNAME {short_cname:<30}" if self.verbosity >= 2 else ""}'''
+                    n = f"""{n:<30}\t{f"CNAME {short_cname:<30}" if self.verbosity >= 2 else ""}"""
                 row = f"{n:<30}\t{ips}"
             # store the result
             if set(ips) != set(self.ignore_hosts):
@@ -121,7 +123,7 @@ class aioDNSBrute(object):
         if self.verbosity >= 1:
             self.pbar.update()
 
-    async def _queue_lookups(self, wordlist, domain):
+    async def _queue_lookups(self, wordlist: list, domain: str) -> None:
         """Takes a list of words and adds them to the async loop also passing the original
         lookup domain name; then attaches the processing callback to deal with the result.
 
@@ -139,8 +141,14 @@ class aioDNSBrute(object):
         await asyncio.gather(*self.tasks, return_exceptions=True)
 
     def run(
-        self, wordlist, domain, resolvers=None, wildcard=True, verify=True, query=True
-    ):
+        self,
+        wordlist: str,
+        domain: str,
+        resolvers: list = None,
+        wildcard: bool = True,
+        verify: bool = True,
+        query: bool = True,
+    ) -> dict:
         """
         Sets up the bruteforce job, does domain verification, sets resolvers, checks for wildcard
         response to lookups, and sets the query type to be used. After all this, open the wordlist
@@ -158,7 +166,8 @@ class aioDNSBrute(object):
             dict containing result of lookups
         """
         self.logger.info(
-            f"Brute forcing {domain} with a maximum of {self.max_tasks} concurrent tasks..."
+            f"Brute forcing {domain} with a maximum of {self.max_tasks} concurrent"
+            " tasks..."
         )
         if verify:
             self.logger.info(f"Using local resolver to verify {domain} exists.")
@@ -166,17 +175,17 @@ class aioDNSBrute(object):
                 socket.gethostbyname(domain)
             except socket.gaierror as err:
                 self.logger.error(
-                    f"Couldn't resolve {domain}, use the --no-verify switch to ignore this error."
+                    f"Couldn't resolve {domain}, use the --no-verify switch to ignore"
+                    " this error."
                 )
-                raise SystemExit(
-                    self.logger.error(f"Error from host lookup: {err}")
-                )
+                raise SystemExit(self.logger.error(f"Error from host lookup: {err}"))
         else:
             self.logger.warn("Skipping domain verification. YOLO!")
         if resolvers:
             self.resolver.nameservers = resolvers
         self.logger.info(
-            f"Using recursive DNS with the following servers: {self.resolver.nameservers}"
+            "Using recursive DNS with the following servers:"
+            f" {self.resolver.nameservers}"
         )
 
         if wildcard:
@@ -191,27 +200,29 @@ class aioDNSBrute(object):
                 )
             except aiodns.error.DNSError as err:
                 # we expect that the record will not exist and error 4 will be thrown
-                self.logger.info(
-                    f"No wildcard response was detected for this domain."
-                )
+                self.logger.info(f"No wildcard response was detected for this domain.")
                 wc_check = None
             finally:
                 if wc_check is not None:
                     self.ignore_hosts = [host.host for host in wc_check]
                     self.logger.warn(
-                        f"Wildcard response detected, ignoring answers containing {self.ignore_hosts}"
+                        "Wildcard response detected, ignoring answers containing"
+                        f" {self.ignore_hosts}"
                     )
         else:
             self.logger.warn("Wildcard detection is disabled")
 
         if query:
             self.logger.info(
-                "Using pycares `query` function to perform lookups, CNAMEs cannot be identified"
+                "Using pycares `query` function to perform lookups, CNAMEs cannot be"
+                " identified"
             )
             self.lookup_type = "query"
         else:
             self.logger.info(
-                "Using pycares `gethostbyname` function to perform lookups, CNAME data will be appended to results (** denotes CNAME, show actual name with -vv)"
+                "Using pycares `gethostbyname` function to perform lookups, CNAME data"
+                " will be appended to results (** denotes CNAME, show actual name with"
+                " -vv)"
             )
             self.lookup_type = "gethostbyname"
 
@@ -241,12 +252,14 @@ class aioDNSBrute(object):
     "--wordlist",
     "-w",
     help="Wordlist to use for brute force.",
+    show_default=True,
     default=f"{os.path.dirname(os.path.realpath(__file__))}/wordlists/bitquark_20160227_subdomains_popular_1000",
 )
 @click.option(
     "--max-tasks",
     "-t",
     default=512,
+    show_default=True,
     help="Maximum number of tasks to run asynchronosly.",
 )
 @click.option(
@@ -254,42 +267,69 @@ class aioDNSBrute(object):
     "-r",
     type=click.File("r"),
     default=None,
-    help="A text file containing a list of DNS resolvers to use, one per line, comments start with #. Default: use system resolvers",
+    help=(
+        "A text file containing a list of DNS resolvers to use, one per line, comments"
+        " start with #. Default: None (use system resolvers)"
+    ),
+    show_default=True,
 )
 @click.option(
-    "--verbosity", "-v", count=True, default=1, help="Increase output verbosity"
+    "--verbosity",
+    "-v",
+    count=True,
+    default=1,
+    help="Increase output verbosity. 0 = off, 1 = normal, 3 = debug.",
+    show_default=True,
 )
 @click.option(
     "--output",
     "-o",
     type=click.Choice(["csv", "json", "off"]),
     default="off",
-    help="Output results to DOMAIN.csv/json (extension automatically appended when not using -f).",
+    show_choices=True,
+    show_default=True,
+    help=(
+        "Output results to DOMAIN.csv/json (extension automatically appended when not"
+        " using -f)."
+    ),
     is_eager=True,
 )
 @click.option(
     "--outfile",
     "-f",
     type=click.File("w"),
-    help="Output filename. Use '-f -' to send file output to stdout overriding normal output.",
-    callback=lambda ctx, param, val: val if val is not None else click.utils.LazyFile(filename=f"{ctx.params['domain']}.{ctx.params['output']}", mode="wt")
+    help=(
+        "Output filename. Use '-f -' to send file output to stdout overriding normal"
+        " output."
+    ),
+    callback=lambda ctx, param, val: val
+    if val is not None
+    else click.utils.LazyFile(
+        filename=f"{ctx.params['domain']}.{ctx.params['output']}", mode="wt"
+    ),
 )
 @click.option(
     "--query/--gethostbyname",
     default=True,
-    help="DNS lookup type to use query (default) should be faster, but won't return CNAME information.",
+    help=(
+        "DNS lookup type to use. Query (default) should be faster, but won't return"
+        " CNAME information."
+    ),
+    show_default=True,
 )
 @click.option(
     "--wildcard/--no-wildcard",
     default=True,
-    help="Wildcard detection, enabled by default",
+    show_default=True,
+    help="Detect if a domain wildcard record is present (i.e. *.example.com).",
 )
 @click.option(
     "--verify/--no-verify",
     default=True,
+    show_default=True,
     help="Verify domain name is sane before beginning, enabled by default",
 )
-@click.version_option(metadata.version('aiodnsbrute'))
+@click.version_option(metadata.version("aiodnsbrute"))
 @click.argument("domain", required=True)
 def main(**kwargs):
     """aiodnsbrute is a command line tool for brute forcing domain names using Python asyncio.
@@ -303,9 +343,10 @@ def main(**kwargs):
     if output != "off":
         outfile = kwargs.get("outfile")
         if isinstance(outfile, IOBase) and outfile.name == "<stdout>":
-           verbosity = 0
-    if resolvers:
+            verbosity = 0
 
+    if resolvers:
+        # clean up the resolver list
         lines = resolvers.read().splitlines()
         resolvers = [x.strip() for x in lines if (x and not x.startswith("#"))]
 
@@ -321,10 +362,12 @@ def main(**kwargs):
 
     if output in ("json"):
         import json
+
         json.dump(results, outfile)
 
     if output in ("csv"):
         import csv
+
         writer = csv.writer(outfile)
         writer.writerow(["Hostname", "IPs", "CNAME", "Aliases"])
         [

@@ -16,12 +16,15 @@ A Python 3.5+ tool that uses asyncio to brute force domain names asynchronously.
 
     $ pip install aiodnsbrute
 
-Note: using a [virtualenv](https://virtualenv.pypa.io/en/latest/userguide/#usage) is highly recommended.
+## Recommended install
 
-## Alternate install
+Using a [virtualenv](https://virtualenv.pypa.io/en/latest/userguide/#usage) is highly recommended.
 
-Alternately you can install the usual way:
+[Pipx](https://github.com/pypa/pipx) is awesome. It takes care of isolating the app for you. Once you've installed it you can install with:
 
+   $ pix install git+https://github.com/blark/aiodnsbrute.git
+
+## Alternately, you can install the usual way:
 
     $ git clone https://github.com/blark/aiodnsbrute.git
     $ cd aiodnsbrute
@@ -33,29 +36,37 @@ Get help:
 
     $ aiodnsbrute --help
 
-    Usage: cli.py [OPTIONS] DOMAIN
-
-      aiodnsbrute is a command line tool for brute forcing domain names
-      utilizing Python's asyncio module.
-
+    Usage: aiodnsbrutedev [OPTIONS] DOMAIN
+    
+      aiodnsbrute is a command line tool for brute forcing domain names using
+      Python asyncio.
+    
       credit: blark (@markbaseggio)
-
+    
     Options:
-      -w, --wordlist TEXT           Wordlist to use for brute force.
+      -w, --wordlist TEXT           Wordlist to use for brute force.  [default:
+                                    /Users/blark/src/aiodnsbrute-dev/aiodnsbrute/w
+                                    ordlists/bitquark_20160227_subdomains_popular_
+                                    1000]
       -t, --max-tasks INTEGER       Maximum number of tasks to run asynchronosly.
+                                    [default: 512]
       -r, --resolver-file FILENAME  A text file containing a list of DNS resolvers
                                     to use, one per line, comments start with #.
-                                    Default: use system resolvers
-      -v, --verbosity               Increase output verbosity
+                                    Default: None (use system resolvers)
+      -v, --verbosity               Increase output verbosity. 0 = off, 1 =
+                                    normal, 3 = debug.  [default: 1]
       -o, --output [csv|json|off]   Output results to DOMAIN.csv/json (extension
                                     automatically appended when not using -f).
+                                    [default: off]
       -f, --outfile FILENAME        Output filename. Use '-f -' to send file
                                     output to stdout overriding normal output.
-      --query / --gethostbyname     DNS lookup type to use query (default) should
+      --query / --gethostbyname     DNS lookup type to use. Query (default) should
                                     be faster, but won't return CNAME information.
-      --wildcard / --no-wildcard    Wildcard detection, enabled by default
+                                    [default: query]
+      --wildcard / --no-wildcard    Detect if a domain wildcard record is present
+                                    (i.e. *.example.com).  [default: wildcard]
       --verify / --no-verify        Verify domain name is sane before beginning,
-                                    enabled by default
+                                    enabled by default  [default: verify]
       --version                     Show the version and exit.
       --help                        Show this message and exit.
 
