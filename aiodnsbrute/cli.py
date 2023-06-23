@@ -3,13 +3,17 @@ import string
 import asyncio
 import functools
 import os
-import uvloop
 import aiodns
 import click
 import socket
-import sys
 from tqdm import tqdm
 from aiodnsbrute.logger import ConsoleLogger
+
+import platform
+if platform.system() == "Windows":
+    import winloop
+else:
+    import uvloop
 
 
 class aioDNSBrute(object):
@@ -26,7 +30,7 @@ class aioDNSBrute(object):
         self.errors = []
         self.fqdn = []
         self.ignore_hosts = []
-        asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+        asyncio.set_event_loop_policy(winloop.WinLoopPolicy() if platform.system() == "Windows" else uvloop.EventLoopPolicy())
         self.loop = asyncio.get_event_loop()
         self.resolver = aiodns.DNSResolver(loop=self.loop, rotate=True)
         self.sem = asyncio.BoundedSemaphore(max_tasks)
