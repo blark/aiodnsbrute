@@ -1,0 +1,1 @@
+from aiodnsbrute.cli import main; main()
