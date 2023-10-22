@@ -15,12 +15,13 @@ from aiodnsbrute.logger import ConsoleLogger
 class aioDNSBrute(object):
     """aiodnsbrute implements fast domain name brute forcing using Python's asyncio module."""
 
-    def __init__(self, verbosity=0, max_tasks=512):
+    def __init__(self, verbosity=0, max_tasks=512, port=53):
         """Constructor.
 
         Args:
             verbosity: set output verbosity: 0 (default) is none, 3 is debug
             max_tasks: the maximum number of tasks asyncio will queue (default 512)
+            port: DNS resolver's custom port (default 53)
         """
         self.tasks = []
         self.errors = []
@@ -28,7 +29,7 @@ class aioDNSBrute(object):
         self.ignore_hosts = []
         asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
         self.loop = asyncio.get_event_loop()
-        self.resolver = aiodns.DNSResolver(loop=self.loop, rotate=True)
+        self.resolver = aiodns.DNSResolver(loop=self.loop, rotate=True, tcp_port=port, udp_port=port)
         self.sem = asyncio.BoundedSemaphore(max_tasks)
         self.max_tasks = max_tasks
         self.verbosity = verbosity
@@ -248,6 +249,12 @@ class aioDNSBrute(object):
     help="Maximum number of tasks to run asynchronosly.",
 )
 @click.option(
+    "--port",
+    "-p",
+    default=53,
+    help="DNS resolver's custom port. Default: 53",
+)
+@click.option(
     "--resolver-file",
     "-r",
     type=click.File("r"),
@@ -307,7 +314,7 @@ def main(**kwargs):
         lines = resolvers.read().splitlines()
         resolvers = [x.strip() for x in lines if (x and not x.startswith("#"))]
 
-    bf = aioDNSBrute(verbosity=verbosity, max_tasks=kwargs.get("max_tasks"))
+    bf = aioDNSBrute(verbosity=verbosity, max_tasks=kwargs.get("max_tasks"), port=kwargs.get("port"))
     results = bf.run(
         wordlist=kwargs.get("wordlist"),
         domain=kwargs.get("domain"),
